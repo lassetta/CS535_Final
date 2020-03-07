@@ -195,7 +195,7 @@ def eval_net(dataloader):
     criterion2 = nn.CrossEntropyLoss(reduction='mean')
     for data in dataloader:
         images, labels = data
-        coarse_labels = labels.numpy()
+        coarse_labels = np.copy(labels.numpy())
         coarse_labels = map_subclasses(coarse_labels)
         coarse_labels = torch.from_numpy(coarse_labels)
         images, labels, coarse_labels = Variable(images).cuda(), Variable(labels).cuda(), Variable(coarse_labels).cuda()
@@ -250,15 +250,8 @@ if __name__ == "__main__":
     mmap = np.array(a)
     print('Building model...')
     net = Net().cuda()
-    '''
-    pretrained = torch.load('block2_branch_2.pth')
-    net_dict = net.state_dict()
-    print(net_dict.keys())
-    print(pretrained.keys())
-
-    net_dict.update(pretrained)
-    net.load_state_dict(net_dict)
-    '''
+    pretrained = torch.load('block2_branch.pth')
+    net.load_state_dict(pretrained)
     net.train() # Why would I do this?
 
     writer = SummaryWriter(log_dir='./log')
@@ -274,7 +267,7 @@ if __name__ == "__main__":
         for i, data in enumerate(trainloader, 0):
             # get the inputs
             inputs, labels = data
-            coarse_labels = labels.numpy()
+            coarse_labels = np.copy(labels.numpy())
             coarse_labels = map_subclasses(coarse_labels)
             coarse_labels = torch.from_numpy(coarse_labels)
 
@@ -314,9 +307,9 @@ if __name__ == "__main__":
         #writer.add_scalar('test_loss', test_loss)
         writer.add_scalars('loss', {'test': test_loss_c, 'train': train_loss_c},epoch)
         writer.add_scalars('accuracy', {'test': test_acc_c, 'train': train_acc_c},epoch)
-        if os.path.exists("block2_branch_2.pth"):
-          os.remove("block2_branch_2.pth")
-        torch.save(net.state_dict(), 'block2_branch_2.pth')
+        if os.path.exists("block2_branch.pth"):
+          os.remove("block2_branch.pth")
+        torch.save(net.state_dict(), 'block2_branch.pth')
 
     writer.close()
     print('Finished Training')

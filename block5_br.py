@@ -195,7 +195,7 @@ def eval_net(dataloader):
     criterion2 = nn.CrossEntropyLoss(reduction='mean')
     for data in dataloader:
         images, labels = data
-        coarse_labels = labels.numpy()
+        coarse_labels = np.copy(labels.numpy())
         coarse_labels = map_subclasses(coarse_labels)
         coarse_labels = torch.from_numpy(coarse_labels)
         images, labels, coarse_labels = Variable(images).cuda(), Variable(labels).cuda(), Variable(coarse_labels).cuda()
@@ -250,16 +250,8 @@ if __name__ == "__main__":
     mmap = np.array(a)
     print('Building model...')
     net = Net().cuda()
-    '''
     pretrained = torch.load('block5_branch.pth')
-    net_dict = net.state_dict()
-    print(net_dict.keys())
-    print(pretrained.keys())
-
-    pretrained = {k: v for k, v in pretrained.items() if k in net_dict}
-    net_dict.update(pretrained)
-    net.load_state_dict(net_dict)
-    '''
+    net.load_state_dict(pretrained)
     net.train() # Why would I do this?
 
     writer = SummaryWriter(log_dir='./log')
@@ -275,7 +267,7 @@ if __name__ == "__main__":
         for i, data in enumerate(trainloader, 0):
             # get the inputs
             inputs, labels = data
-            coarse_labels = labels.numpy()
+            coarse_labels = np.copy(labels.numpy())
             coarse_labels = map_subclasses(coarse_labels)
             coarse_labels = torch.from_numpy(coarse_labels)
 
