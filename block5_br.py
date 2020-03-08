@@ -39,8 +39,8 @@ class Net(nn.Module):
     def __init__(self):
         super(Net, self).__init__()
         # auxiliary
-        self.dropout_conv = nn.Dropout(p=0)
-        self.dropout_fc = nn.Dropout(p=0)
+        self.dropout_conv = nn.Dropout(p=0.15)
+        self.dropout_fc = nn.Dropout(p=0.25)
         # block 1
         self.conv_b1_1 = nn.Conv2d(3, 32, 3, padding=1)
         self.conv_b1_bn1 = nn.BatchNorm2d(32)
@@ -48,8 +48,6 @@ class Net(nn.Module):
         self.conv_b1_bn2 = nn.BatchNorm2d(32)
         self.conv_b1_3 = nn.Conv2d(32, 32, 3, padding=1)
         self.conv_b1_bn3 = nn.BatchNorm2d(32)
-        self.conv_b1_4 = nn.Conv2d(32, 32, 3, padding=1)
-        self.conv_b1_bn4 = nn.BatchNorm2d(32)
         self.pool_b1 = nn.MaxPool2d(2,2)
         # block 2
         self.conv_b2_1 = nn.Conv2d(32, 64, 3, padding=1)
@@ -58,8 +56,6 @@ class Net(nn.Module):
         self.conv_b2_bn2 = nn.BatchNorm2d(64)
         self.conv_b2_3 = nn.Conv2d(64, 64, 3, padding=1)
         self.conv_b2_bn3 = nn.BatchNorm2d(64)
-        self.conv_b2_4 = nn.Conv2d(64, 64, 3, padding=1)
-        self.conv_b2_bn4 = nn.BatchNorm2d(64)
         self.pool_b2 = nn.MaxPool2d(2,2)
         # block 3
         self.conv_b3_1 = nn.Conv2d(64, 128, 3, padding=1)
@@ -68,8 +64,6 @@ class Net(nn.Module):
         self.conv_b3_bn2 = nn.BatchNorm2d(128)
         self.conv_b3_3 = nn.Conv2d(128, 128, 3, padding=1)
         self.conv_b3_bn3 = nn.BatchNorm2d(128)
-        self.conv_b3_4 = nn.Conv2d(128, 128, 3, padding=1)
-        self.conv_b3_bn4 = nn.BatchNorm2d(128)
         self.pool_b3 = nn.MaxPool2d(2,2)
         # block 4
         self.conv_b4_1 = nn.Conv2d(128, 256, 3, padding=1)
@@ -78,8 +72,6 @@ class Net(nn.Module):
         self.conv_b4_bn2 = nn.BatchNorm2d(256)
         self.conv_b4_3 = nn.Conv2d(256, 256, 3, padding=1)
         self.conv_b4_bn3 = nn.BatchNorm2d(256)
-        self.conv_b4_4 = nn.Conv2d(256, 256, 3, padding=1)
-        self.conv_b4_bn4 = nn.BatchNorm2d(256)
         self.pool_b4 = nn.MaxPool2d(2,2)
         # block 5
         self.conv_b5_1 = nn.Conv2d(256, 512, 3, padding=1)
@@ -88,19 +80,21 @@ class Net(nn.Module):
         self.conv_b5_bn2 = nn.BatchNorm2d(512)
         self.conv_b5_3 = nn.Conv2d(512, 512, 3, padding=1)
         self.conv_b5_bn3 = nn.BatchNorm2d(512)
-        self.conv_b5_4 = nn.Conv2d(512, 512, 3, padding=1)
-        self.conv_b5_bn4 = nn.BatchNorm2d(512)
         self.pool_b5 = nn.MaxPool2d(2,2)
 
         # coarse branch 1 -> generalized classes
         self.br1_fc1 = nn.Linear(512, 4096)
         self.br1_bn1 = nn.BatchNorm1d(4096)
-        self.br1_fc2 = nn.Linear(4096,20)
+        self.br1_fc2 = nn.Linear(4096,4096)
+        self.br1_bn2 = nn.BatchNorm1d(4096)
+        self.br1_fc3 = nn.Linear(4096,20)
         self.br1_sm = nn.Softmax(dim=1)
         # branch 2 -> Fine layers
         self.br2_fc1 = nn.Linear(512, 4096)
         self.br2_bn1 = nn.BatchNorm1d(4096)
-        self.br2_fc2 = nn.Linear(4096,100)
+        self.br2_fc2 = nn.Linear(4096,4096)
+        self.br2_bn2 = nn.BatchNorm1d(4096)
+        self.br2_fc3 = nn.Linear(4096,100)
         self.br2_sm = nn.Softmax(dim=1)
 
 
@@ -112,8 +106,6 @@ class Net(nn.Module):
         x = self.dropout_conv(x)
         x = F.leaky_relu(self.conv_b1_bn3(self.conv_b1_3(x)))
         x = self.dropout_conv(x)
-        x = F.leaky_relu(self.conv_b1_bn4(self.conv_b1_4(x)))
-        x = self.dropout_conv(x)
         x = self.pool_b1(x)
         # block 2 forward prop
         x = F.leaky_relu(self.conv_b2_bn1(self.conv_b2_1(x)))
@@ -121,8 +113,6 @@ class Net(nn.Module):
         x = F.leaky_relu(self.conv_b2_bn2(self.conv_b2_2(x)))
         x = self.dropout_conv(x)
         x = F.leaky_relu(self.conv_b2_bn3(self.conv_b2_3(x)))
-        x = self.dropout_conv(x)
-        x = F.leaky_relu(self.conv_b2_bn4(self.conv_b2_4(x)))
         x = self.dropout_conv(x)
         x = self.pool_b2(x)
         # block 3 forward prop
@@ -132,8 +122,6 @@ class Net(nn.Module):
         x = self.dropout_conv(x)
         x = F.leaky_relu(self.conv_b3_bn3(self.conv_b3_3(x)))
         x = self.dropout_conv(x)
-        x = F.leaky_relu(self.conv_b3_bn4(self.conv_b3_4(x)))
-        x = self.dropout_conv(x)
         x = self.pool_b3(x)
         # block 3 forward prop
         x = F.leaky_relu(self.conv_b4_bn1(self.conv_b4_1(x)))
@@ -141,8 +129,6 @@ class Net(nn.Module):
         x = F.leaky_relu(self.conv_b4_bn2(self.conv_b4_2(x)))
         x = self.dropout_conv(x)
         x = F.leaky_relu(self.conv_b4_bn3(self.conv_b4_3(x)))
-        x = self.dropout_conv(x)
-        x = F.leaky_relu(self.conv_b4_bn4(self.conv_b4_4(x)))
         x = self.dropout_conv(x)
         x = self.pool_b4(x)
         # block 3 forward prop
@@ -152,8 +138,6 @@ class Net(nn.Module):
         x = self.dropout_conv(x)
         x = F.leaky_relu(self.conv_b5_bn3(self.conv_b5_3(x)))
         x = self.dropout_conv(x)
-        x = F.leaky_relu(self.conv_b5_bn4(self.conv_b5_4(x)))
-        x = self.dropout_conv(x)
         x = self.pool_b5(x)
         # offshoot branch 1
         br1_x = x.view(-1, self.num_flat_features(x))
@@ -162,6 +146,10 @@ class Net(nn.Module):
         br1_x = F.leaky_relu(br1_x)
         br1_x = self.dropout_fc(br1_x) 
         br1_x = self.br1_fc2(br1_x)
+        br1_x = self.br1_bn2(br1_x)
+        br1_x = F.leaky_relu(br1_x)
+        br1_x = self.dropout_fc(br1_x) 
+        br1_x = self.br1_fc3(br1_x)
         # offshoot branch 2
         br2_x = x.view(-1, self.num_flat_features(x))
         br2_x = self.br2_fc1(br2_x)
@@ -169,6 +157,10 @@ class Net(nn.Module):
         br2_x = F.leaky_relu(br2_x)
         br2_x = self.dropout_fc(br2_x) 
         br2_x = self.br2_fc2(br2_x)
+        br2_x = self.br2_bn2(br2_x)
+        br2_x = F.leaky_relu(br2_x)
+        br2_x = self.dropout_fc(br2_x) 
+        br2_x = self.br2_fc3(br2_x)
         return(br1_x,br2_x)
 
 
@@ -250,15 +242,18 @@ if __name__ == "__main__":
     mmap = np.array(a)
     print('Building model...')
     net = Net().cuda()
+    optimizer = optim.Adagrad(net.parameters(), lr=0.005)
+    '''
     pretrained = torch.load('block5_branch.pth')
-    net.load_state_dict(pretrained)
+    net.load_state_dict(pretrained['state_dict'])
+    optimizer.load_state_dict(pretrained['optimizer'])
+    '''
     net.train() # Why would I do this?
 
     writer = SummaryWriter(log_dir='./log')
     criterion1 = nn.CrossEntropyLoss()
     criterion2 = nn.CrossEntropyLoss()
     #optimizer = optim.SGD(net.parameters(), lr=0.01, momentum=0.9)
-    optimizer = optim.Adagrad(net.parameters(), lr=0.01)
 
     print('Start training...')
     for epoch in range(MAX_EPOCH):  # loop over the dataset multiple times
@@ -281,7 +276,7 @@ if __name__ == "__main__":
             # forward + backward + optimize
             loss1 = criterion1(fine_out, labels)
             loss2 = criterion2(coarse_out, coarse_labels)
-            loss = (.85)*loss1 + (.15)*loss2
+            loss = (.9)*loss1 + (.1)*loss2
             loss.backward()
             optimizer.step()
 
@@ -309,7 +304,11 @@ if __name__ == "__main__":
         writer.add_scalars('accuracy', {'test': test_acc_c, 'train': train_acc_c},epoch)
         if os.path.exists("block5_branch.pth"):
             os.remove("block5_branch.pth")
-        torch.save(net.state_dict(), 'block5_branch.pth')
+        state = {
+            'state_dict': net.state_dict(),
+            'optimizer': optimizer.state_dict()
+            }
+        torch.save(state, 'block5_branch.pth')
 
     writer.close()
     print('Finished Training')
