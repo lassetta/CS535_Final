@@ -212,12 +212,17 @@ if __name__ == "__main__":
     BATCH_SIZE = 32 #mini_batch size
     MAX_EPOCH = 150 #maximum epoch to train
 
+    train_transform = transforms.Compose(
+        [transforms.RandomCrop(32, padding=4),
+         transforms.RandomHorizontalFlip(),
+         transforms.ToTensor(),
+         transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))]) #torchvision.transforms.Normalize(mean, std)
     transform = transforms.Compose(
         [transforms.ToTensor(),
          transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))]) #torchvision.transforms.Normalize(mean, std)
 
     trainset = torchvision.datasets.CIFAR100(root='./data', train=True,
-                                            download=True, transform=transform)
+                                            download=True, transform=train_transform)
     trainloader = torch.utils.data.DataLoader(trainset, batch_size=BATCH_SIZE,
                                               shuffle=True, num_workers=2)
 
@@ -242,12 +247,11 @@ if __name__ == "__main__":
     mmap = np.array(a)
     print('Building model...')
     net = Net().cuda()
-    optimizer = optim.Adagrad(net.parameters(), lr=0.005)
-    '''
+    #optimizer = optim.Adagrad(net.parameters(), lr=0.005)
+    optimizer = optim.SGD(net.parameters(), lr=0.005, momentum = 0.85)
     pretrained = torch.load('block4_branch.pth')
     net.load_state_dict(pretrained['state_dict'])
-    optimizer.load_state_dict(pretrained['optimizer'])
-    '''
+    #optimizer.load_state_dict(pretrained['optimizer'])
     net.train() # Why would I do this?
 
     writer = SummaryWriter(log_dir='./log')
@@ -277,7 +281,7 @@ if __name__ == "__main__":
             loss1 = criterion1(fine_out, labels)
             loss2 = criterion2(coarse_out, coarse_labels)
             #loss = (1)*loss1 + (0)*loss2
-            loss = (0.9)*loss1 + (0.1)*loss2
+            loss = (.88)*loss1 + (0.12)*loss2
             loss.backward()
             optimizer.step()
 
