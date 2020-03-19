@@ -1,8 +1,8 @@
 from __future__ import print_function
 from __future__ import division
 import pickle
-import torch
 import numpy as np
+import torch
 from torch.autograd import Variable
 import torch.nn as nn
 import torch.nn.functional as F
@@ -10,6 +10,10 @@ import torchvision
 import torchvision.transforms as transforms
 import torch.optim as optim
 import matplotlib.pyplot as plt
+from joblib import Parallel, delayed
+import multiprocessing as mp
+from tqdm import tqdm
+
 
 classes_c2f_map = [['beaver', 'dolphin', 'otter', 'seal', 'whale'],
                    ['aquarium_fish', 'flatfish', 'ray', 'shark', 'trout'],
@@ -249,8 +253,21 @@ def attack(model, input, coarse_label, fine_labels, epsilon):
     return projection(curr.detach())
 
 
+def job(i, model, images, labels):
+    image = images[i, :, :, :].unsqueeze(0)
+    label = labels[i]
+    coarse_label = map_subclasses(np.array(label, ndmin=2))
+    fine_labels = np.flatnonzero(mmap == coarse_label)
+    coarse_label = torch.from_numpy(coarse_label)
+    fine_labels = torch.from_numpy(fine_labels)
+
+    output_image = attack(net, image, coarse_label, fine_labels, 1)
+
+    return (output_image, coarse_label)
+
+
 if __name__ == "__main__":
-    BATCH_SIZE = 1  # mini_batch size
+    BATCH_SIZE = 2  # mini_batch size
 
     transform = transforms.Compose(
         [transforms.ToTensor(),
@@ -286,27 +303,25 @@ if __name__ == "__main__":
     net.load_state_dict(pretrained['state_dict'])
     net.eval()
 
-    output_labels = np.array((0, 1))
-    output_images = np.array((0, 3, 32, 32))
+    output_labels = np.empty((0, 1))
+    output_images = np.empty((0, 3, 32, 32))
+
+    # set up multiprocessing
+    num_cores = mp.cpu_count()
 
     ctr = 0
     for data in trainloader:
-        ctr += 1
-        print("ctr: {}".format(ctr))
-        image, label = data
-        coarse_label = map_subclasses(label.numpy())
-        fine_labels = np.flatnonzero(mmap == coarse_label)
-        coarse_label = torch.from_numpy(coarse_label)
-        fine_labels = torch.from_numpy(fine_labels)
+        images, labels = data
+        n_items = len(labels)
+        idxs = tqdm(range(n_items))
+        results = (Parallel(n_jobs=num_cores)(delayed(job)(i, net, images, labels) for i in idxs))
 
-        output_image = attack(net, image, coarse_label, fine_labels, 1)
+        for i in range(n_items):
+            output_images = np.append(output_images, results[i][0].numpy(), axis=0)
+            output_labels = np.append(output_labels, results[i][1].numpy(), axis=0)
 
-        output_images = np.append(output_images, output_image, axis=0)
-        output_labels = np.append(output_labels, coarse_label, axis=0)
-
-        if ctr % 100 == 0:
-            np.save("attacked_images.npy", output_images)
-            np.save("attacked_image_labels.npy", output_labels)
+        np.save("attacked_images.npy", output_images)
+        np.save("attacked_image_labels.npy", output_labels)
 
         break
 
