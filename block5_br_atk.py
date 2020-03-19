@@ -9,7 +9,6 @@ import torch.nn.functional as F
 import torchvision
 import torchvision.transforms as transforms
 import torch.optim as optim
-import matplotlib.pyplot as plt
 from joblib import Parallel, delayed
 import multiprocessing as mp
 from tqdm import tqdm
@@ -236,8 +235,6 @@ def projection(input):
 
 
 def attack(model, input, coarse_label, fine_labels, epsilon):
-    plt.figure()
-
     curr = input.clone()
     curr.requires_grad = True
 
@@ -267,7 +264,7 @@ def job(i, model, images, labels):
 
 
 if __name__ == "__main__":
-    BATCH_SIZE = 2  # mini_batch size
+    BATCH_SIZE = 32  # mini_batch size
 
     transform = transforms.Compose(
         [transforms.ToTensor(),
@@ -322,8 +319,3 @@ if __name__ == "__main__":
 
         np.save("attacked_images.npy", output_images)
         np.save("attacked_image_labels.npy", output_labels)
-
-        break
-
-    np.save("attacked_images.npy", output_images)
-    np.save("attacked_image_labels.npy", output_labels)
